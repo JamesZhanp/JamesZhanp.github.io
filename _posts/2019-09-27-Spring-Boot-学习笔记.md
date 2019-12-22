@@ -1010,6 +1010,76 @@ public class HttpEncodingProperties {
 
 一旦这个配置类生效；这个配置类会给容器添加各种组件；这些组件的属性是从对应的properties中获取的，这些类里面的每个属性又是和配置文件绑定的
 
+####  1.2 自动配置之2.0以上版本
+
+@SpringBootApplication注解组成
+
+```java
+@SpringBootConfiguration
+@EnableAutoConfiguration
+@ComponentScan(excludeFilters = {
+      @Filter(type = FilterType.CUSTOM, classes = TypeExcludeFilter.class),
+      @Filter(type = FilterType.CUSTOM, classes = AutoConfigurationExcludeFilter.class) })
+```
+
+@EnableAutoConfiguration注解
+
+```java
+@AutoConfigurationPackage
+@Import(AutoConfigurationImportSelector.class)
+```
+
+AutoConfigurationImportSelector类中最重要的方法为
+
+```java
+@Override
+	public String[] selectImports(AnnotationMetadata annotationMetadata) {
+		if (!isEnabled(annotationMetadata)) {
+			return NO_IMPORTS;
+		}
+		AutoConfigurationMetadata autoConfigurationMetadata = AutoConfigurationMetadataLoader.loadMetadata(this.beanClassLoader);
+		AnnotationAttributes attributes = getAttributes(annotationMetadata);
+		List<String> configurations = getCandidateConfigurations(annotationMetadata,
+				attributes);
+		configurations = removeDuplicates(configurations);
+		Set<String> exclusions = getExclusions(annotationMetadata, attributes);
+		checkExcludedClasses(configurations, exclusions);
+		configurations.removeAll(exclusions);
+		configurations = filter(configurations, autoConfigurationMetadata);
+		fireAutoConfigurationImportEvents(configurations, exclusions);
+		return StringUtils.toStringArray(configurations);
+	}
+```
+
+返回内容的configuration主要来自于函数getCondidateConfigurations
+
+```java
+protected List<String> getCandidateConfigurations(AnnotationMetadata metadata,
+      AnnotationAttributes attributes) {
+   List<String> configurations = SpringFactoriesLoader.loadFactoryNames(
+         getSpringFactoriesLoaderFactoryClass(), getBeanClassLoader());
+   Assert.notEmpty(configurations,
+         "No auto configuration classes found in META-INF/spring.factories. If you "
+               + "are using a custom packaging, make sure that file is correct.");
+   return configurations;
+}
+```
+
+继续查看SpringFactoriesLoader.loadFactoryNames()
+
+```java
+public static List<String> loadFactoryNames(Class<?> factoryClass, @Nullable ClassLoader classLoader) {
+    String factoryClassName = factoryClass.getName();
+    return (List)loadSpringFactories(classLoader).getOrDefault(factoryClassName, Collections.emptyList());
+}
+```
+
+根据classname进行查询， 此使查看map->loadSpringFactories
+
+<img src="../img/loadSpringFactories.png"/>
+
+自动加载所有jar包下所对应别的内容
+
 ### 2、所有的自动配置组件
 
 每一个xxxAutoConfiguration这样的类都是容器中的一个组件，都加入到容器中；
