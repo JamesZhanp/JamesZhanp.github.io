@@ -1,8 +1,4 @@
 ---
-layout:     post
-
-title:      Spring Cloud学习笔记
-
 subtitle:   Eureka
 
 date:       2019-12-23
@@ -21,7 +17,7 @@ tags:
 
 # Spring Cloud学习笔记
 
-创建maven项目
+## 创建maven项目
 
 创建2个model工程：其中一个作为服务注册中心， Eureka Server， 另一个作为Eureka Client
 
