@@ -172,3 +172,13 @@ public class HelloConsumer{
     private HelloService helloService;
 }
 ```
+### 负载均衡策略
+在集群负载均衡时， Dubbo提供多种均衡策略，默认为 `Random` 随机调用
+#### Random LoadBalance
+为每台能提供相同服务的服务器配置权重，根据权重可大约算出请求落在每台服务器上的概率
+#### RoundRobin LoadBalance（轮询， 不推荐）
+存在慢的提供者累计请求的问题，比如： 第二台服务器正常运转，但是其处理请求速度较慢，久而久之会造成大量的请求在第二台服务器上等待的情况
+#### LeastActive LoadBalance
+- 最少活跃调用书，相同活跃的随机
+- 慢的提供则收到的更少的请求，因为越慢的调用前后计数差会越大
+
