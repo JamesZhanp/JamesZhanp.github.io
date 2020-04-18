@@ -172,3 +172,16 @@ public class HelloConsumer{
     private HelloService helloService;
 }
 ```
+
+
+
+## Dubbo框架构成
+
+### 角色组成
+
+- provider: 暴露服务的服务提供方
+- consumer：调用远程服务的消费方
+- registry：服务注册与发现的注册中心
+- monitor：统计服务的调用次数和调用时间的监控中心
+- container：服务运行的容器
+
