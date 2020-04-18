@@ -1,4 +1,6 @@
 ---
+layout:     post
+
 subtitle:   Dubbo知识整合
 
 date:       2020-01-31

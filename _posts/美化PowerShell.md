@@ -1,4 +1,6 @@
 ---
+layout:     post
+
 subtitle:   美化windows powershell界面
 
 date:       2020-04-19
