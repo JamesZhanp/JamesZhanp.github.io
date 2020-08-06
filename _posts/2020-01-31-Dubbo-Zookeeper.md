@@ -197,5 +197,4 @@ public class HelloConsumer{
 #### LeastActive LoadBalance
 - 最少活跃调用书，相同活跃的随机
 - 慢的提供则收到的更少的请求，因为越慢的调用前后计数差会越大
->>>>>>> 2aebe58ab0a6f4a74da5e92ce4fd6feb9aa783ac
 
