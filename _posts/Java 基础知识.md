@@ -85,7 +85,6 @@ public boolean equals(Object anObject){
             }
             return true;
         }
-
    }
     return false;
 }
