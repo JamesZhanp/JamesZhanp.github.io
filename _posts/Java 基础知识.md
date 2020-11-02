@@ -217,22 +217,20 @@ Collections是为了方便集合使用的工具类。Collections提供sort和bin
 
 ## ArrayList
 
-<img src="../img/arraylist_implements.png"></img>
-
 ArrayList的整体结构比较简单，就是一个数组结构。 其默认初始化的长度为10。
 
-- 允许put null值，且会**自动扩容（1.5倍**）
+- 允许put null值，且会自动扩容（1.5倍）
 - size， isEmpty， set， get， add等方法的时间复杂度都是O（1）
-- 是**非线程安全**的，多线程情况下，使用Collenctions.SyschronizedList
+- 是非线程安全的，多线程情况下，使用Collenctions.SyschronizedList
 - 增强for循环，迭代器迭代过程中若大小改变，会快速失败
 
 ### 初始化
 
-初始化有三种办法： **无参数直接初始化、指定大小初始化、指定初始数据初始化**
+初始化有三种办法： 无参数直接初始化、指定大小初始化、指定初始数据初始化
 
 注意点：
 
-1. 无参构造初始化时， ArrayList的**默认大小是空数组**，而不是10， 10始在第一次add的时候扩容后的数组大小、
+1. 无参构造初始化时， ArrayList的默认大小是空数组，而不是10， 10始在第一次add的时候扩容后的数组大小、
 
 #### 新增和扩容的实现
 
@@ -386,3 +384,54 @@ private E unlinkFirst(Node<E> f) {
 ```
 
 尾部删除类似
+
+
+
+## HashMap
+
+### 整体架构
+
+HashMap的底层的数据结构主要是：数组 + 链表 + 红黑树
+
+当链表的长度大于8的时候，链表会转化成红黑树，当红黑树的大小小于6的时候，会转化成链表。
+
+<img src="https://img1.sycdn.imooc.com/5d5fc7cc0001ec3211040928.png">
+
+#### 类注释
+
+- HashMap允许null值，但也只允许出现一个null的key， 且是非线程安全的
+- load factor（影响因子）默认值是0.75， 是均衡了时间和空间损耗出来的值
+- 若在HashMap中要存储大量的值，则容量在一开始就要设置足够大，可防止不断扩容的情况出现，影响性能
+- HashMap是非线程安全的，可以自己在外部枷锁，或者使用Collections.synchronizedMap来实现线程安全，Collections.synchronizedMap的实现是在每个方法上都添加了**Synchronized**锁
+- 迭代过程中，若修改HashMap的结构，则会快速失败
+
+#### 常见属性
+
+```java
+// 初是容量16
+static final int DEFAULT_INITIAL_CAPACITY=1<<4;
+// 最大容量
+static final int MAXIMUM_CAPACITY = 1<<20;
+//负载因子默认值
+static final float DEFAULT_LOAD_FACTOR=0.75f;
+//链表长度上限
+static final int TREEIFY_THRESHOLD = 8;
+//红黑树的长度下限
+static final int UNTREEIFY_THREESHOLD = 6;
+// 当数组容量大于64时，链表才会转化成红黑树
+static final int MIN_TREEIFY_CAPACITY=64;
+// 记录迭代过程中，HashMap的结构是否发生变化
+transient int madCount;
+// HashMap 的实际大小
+transient int size;
+// 存放数据的数组
+transient Node<K, V>[] table;
+
+int threshold;
+
+//链表的节点
+static class Node<K, V> implements Map.Entry<K, V>{}
+//红黑树的节点
+static final class TreeNode<K, V> extends LinkedHashMap.Entry<K, V>{}
+```
+
