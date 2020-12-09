@@ -996,3 +996,612 @@ public class RedisConfig {
 
 }
 ```
+
+## Redis 配置文件
+
+> 配置单位大小写不敏感
+
+```bash
+# Redis configuration file example.
+#
+# Note that in order to read the configuration file, Redis must be
+# started with the file path as first argument:
+#
+# ./redis-server /path/to/redis.conf
+
+# Note on units: when memory size is needed, it is possible to specify
+# it in the usual form of 1k 5GB 4M and so forth:
+#
+# 1k => 1000 bytes
+# 1kb => 1024 bytes
+# 1m => 1000000 bytes
+# 1mb => 1024*1024 bytes
+# 1g => 1000000000 bytes
+# 1gb => 1024*1024*1024 bytes
+#
+# units are case insensitive so 1GB 1Gb 1gB are all the same.
+
+```
+
+> config 包含
+
+```bash
+################################## INCLUDES ###################################
+
+# Include one or more other config files here.  This is useful if you
+# have a standard template that goes to all Redis servers but also need
+# to customize a few per-server settings.  Include files can include
+# other files, so use this wisely.
+#
+# Notice option "include" won't be rewritten by command "CONFIG REWRITE"
+# from admin or Redis Sentinel. Since Redis always uses the last processed
+# line as value of a configuration directive, you'd better put includes
+# at the beginning of this file to avoid overwriting config change at runtime.
+#
+# If instead you are interested in using includes to override configuration
+# options, it is better to use include as the last line.
+#
+# include /path/to/local.conf
+# include /path/to/other.conf
+
+```
+
+> 网络配置
+
+```bash
+################################## NETWORK #####################################
+
+# By default, if no "bind" configuration directive is specified, Redis listens
+# for connections from all the network interfaces available on the server.
+# It is possible to listen to just one or multiple selected interfaces using
+# the "bind" configuration directive, followed by one or more IP addresses.
+#
+# Examples:
+#
+# bind 192.168.1.100 10.0.0.1
+# bind 127.0.0.1 ::1
+#
+# ~~~ WARNING ~~~ If the computer running Redis is directly exposed to the
+# internet, binding to all the interfaces is dangerous and will expose the
+# instance to everybody on the internet. So by default we uncomment the
+# following bind directive, that will force Redis to listen only into
+# the IPv4 lookback interface address (this means Redis will be able to
+# accept connections only from clients running into the same computer it
+# is running).
+#
+# IF YOU ARE SURE YOU WANT YOUR INSTANCE TO LISTEN TO ALL THE INTERFACES
+# JUST COMMENT THE FOLLOWING LINE.
+
+bind 127.0.0.1 # 绑定ip 远程连接的时候需要注释
+protected-mode yes # 保护模式
+port 6379# 端口设置
+```
+
+
+
+> 通用general
+
+```bash
+daemonize yes    # 以守护进程的方式进行 默认为 no
+pidfile /var/run/redis_6379.pid # 后台方式运行，需要pid
+# Specify the server verbosity level.
+# This can be one of:
+# debug (a lot of information, useful for development/testing)
+# verbose (many rarely useful info, but not a mess like the debug level)
+# notice (moderately verbose, what you want in production probably) 生产环境
+# warning (only very important / critical messages are logged)
+loglevel notice
+logfile "" # 日志的文件位置名
+database 16 # 默认数据库的数量
+
+```
+
+> 快照 snapshot
+
+持久化， 在规定的时间内，执行了多少次操作， 会持久化到.rdb  .aof
+
+```bash
+# 在900s内， 如果至少有一个key进行了修改， 则会出现持久化
+save 900 1
+# 在300s内， 如果至少有10个key进行了修改， 则会出现持久化
+save 300 10
+# 在60s内， 如果至少10000个key进行了修改， 则会出现持久化
+save 60 10000
+
+# 遇到错误是否继续持久化
+stop-writes-on-bgsave-error yes
+# 是否压缩rdb文件，需要cpu资源
+rdbcompression yes
+
+# 保存rdb文件的时候，进行错误的检查
+rdbchecksum yes
+
+dir ./ # rdb 文件目录保存
+
+
+
+
+```
+
+
+
+> REPLICATION  主从复制
+
+
+
+> SECURITY 安全
+
+```bash
+# redis 默认没有密码
+
+127.0.0.1:6379> ping
+PONG
+127.0.0.1:6379> config get requirepass
+1) "requirepass"
+2) ""
+# 设置密码
+127.0.0.1:6379> config set requirepass "123456"
+OK
+127.0.0.1:6379> config get requirepass
+(error) NOAUTH Authentication required.
+127.0.0.1:6379> ping
+(error) NOAUTH Authentication required.
+# 认证
+127.0.0.1:6379> auth 123456
+OK
+127.0.0.1:6379> ping
+PONG
+
+```
+
+
+
+> 限制clients
+
+
+
+```bash
+ maxclients 10000 # 最大的client连接数量
+ 
+ maxmemory <bytes> # 最大内存
+ 
+ maxmemory-policy noeviction # 内存到达上限的策略
+
+
+
+```
+
+> 面试会问到 maxmemory-policy 六种方式
+> 1、volatile-lru：只对设置了过期时间的key进行LRU（默认值） 
+
+2、allkeys-lru ： 删除lru算法的key   
+
+3、volatile-random：随机删除即将过期key   
+
+4、allkeys-random：随机删除   
+
+5、volatile-ttl ： 删除即将过期的   
+
+6、noeviction ： 永不过期，返回错误
+
+> APPEND ONLY AOF
+
+```bash
+appendonly no # 默认不开启aof， 使用rdb
+appendfilename "appendonly.aof" # 持久化文件的名称
+
+# appendfsync always  # 每次修改都会sync， 消耗性能
+appendfsync everysec # 每秒进行一次sync， 可能会出现丢失
+# appendfsync no # 不执行sync， 系统自己同步
+
+```
+
+
+
+
+
+## Redis 持久化
+
+### RDB （Redis Database）
+
+在指定的时间间隔内， 将内存中的数据集快照写入磁盘， 也就是snapshot快照，恢复时是直接将快照文件读到内存中
+
+会单独创建一个子进程来进行持久化，会先将数据写入到一个临时文件中，持久化过程结束，则由这次的文件进行替换之前的文件。
+
+整个过程中主进程不进行任何IO操作。
+
+进行大规模的数据恢复时， 且对于数据恢复的完整性不是非常敏感，RDB方式相对而言更加的高效。
+
+**缺点**：
+
+最后一次更新的数据可能丢失
+
+==RDB保存的默认文件是dump.rdp==
+
+
+
+> 触发机制
+
+1. save规则满足的情况下
+2. 执行flushall命令
+3. 退出redis
+
+备份自动生成一个dump.rdb
+
+> 恢复rdb
+
+将rdb文件放到redis的启动目录下即可
+
+**优点**：
+
+	1. 适合大规模的数据恢复！
+
+   	2. 对数据的完整性要求不高
+
+**缺点**：
+
+	1. 需要一定对额时间间隔操作，redis意外宕机， 修改会丢失
+
+   	2.  需要fork子进程， 需要占用一定的内存空间
+
+### AOF （Append Only File）
+
+以日志的形式记录每个写操作， 将redis执行过的所有指令记录下来
+
+默认不开启，需要手动开启，
+
+```bash
+appendonly no
+
+# The name of the append only file (default: "appendonly.aof")
+
+appendfilename "appendonly.aof"
+auto-aof-rewrite-percentage 100
+auto-aof-rewrite-min-size 64mb
+
+```
+
+
+
+如果aof文件有错误，浙时候redis是无法成功启动的， 需要修复
+
+redis 官方提供的修复工具 `redis-check-aof --fix appendonly.aof ` 
+
+如果文件修复正常， 在可以重启正常
+
+> 优缺点
+
+优点
+
+1. 每次修改都同步，（默认开启为每秒同步）， 则可能丢失一秒的数据
+
+   
+
+缺点
+
+1. 相对数据文件来说， aof远大于rdb， 修复的速度也比较慢
+2. aof的运行速度也较慢， 所以redis默认的持久化是rdb
+
+扩展：
+
+同时开启两种持久化方式
+
+- redis重启的时候会优先加载aof文件内来恢复数据
+- rdb数据不实时， 但更适用于数据备份， aof不断在变化， 不宜作为备份
+
+性能建议
+
+- 因为RDB文件只用作备份用途，建议在slaver上配置RDB文件，15分钟左右进行一次备份， 保留`save 900 1  `这条规则
+- 如果enable AOF好处是最恶劣情况下只会丢失2秒的数据。代价：
+  - 持续的IO
+  - AOF重写到最后rewrite过程中产生的吧新数据写到新文件不可阻止的产升堵塞。
+- 不Enable AOF， 仅仅靠Master-Slave实现高可用也可以， 同时能省下一大笔的IO支出， 也减少了rewrite的波动，但是如果出现slaver和Master同时down掉，会丢失十几分钟的数据
+
+
+
+## Redis发布订阅
+
+Redis发布订阅是一种==消息通信模式==，发送者推送消息，订阅者接收消息
+
+![image-20201206224318774](C:\Users\16255\AppData\Roaming\Typora\typora-user-images\image-20201206224318774.png)
+
+> 测试
+
+```bash
+# 订阅者
+127.0.0.1:6379> SUBSCRIBE JamesZhan
+Reading messages... (press Ctrl-C to quit)
+1) "subscribe"
+2) "JamesZhan"
+3) (integer) 1
+
+#发送者发送信息
+127.0.0.1:6379> PUBLISH JamesZhan "Hello This is The First Message From James Channel"
+(integer) 1
+#订阅者接收信息
+127.0.0.1:6379> SUBSCRIBE JamesZhan
+Reading messages... (press Ctrl-C to quit)
+1) "subscribe"
+2) "JamesZhan"
+3) (integer) 1
+1) "message"
+2) "JamesZhan"
+3) "Hello This is The First Message From James Channel"
+
+```
+
+> 原理
+
+通过SUBSCRIBE命令订阅某个评到之后， redis-server里面维护了一个字典， 字典的key就是一个个频道，而字典的值就是一个个的链表， 保存所有订阅了这个频道的客户都安，SUBSCRIBE的关键是将订阅的客户都安添加到链表当中
+
+通过PUBLISH命令向订阅者发送消息，redis-server会使用给定的频道作为key，遍历订阅的客户端将消息进行发布
+
+
+
+## Redis主从复制
+
+==数据的复制是单向的， 只能从主节点到从节点，Master以写为主， Slaver以读为主==
+
+主从复制的作用主要包括：
+
+1. 数据冗余： 主从复制是下了数据的热备份，是持久化之外的数据冗余fangshi
+2. 故障恢复： 主节点出现问题的情况下可以由从节点提供服务吗，实现快速的故障恢复
+3. 负载均衡： 在主从复制的基础上， 配合读写分离，可以由主节点提供写服务，从节点提供读服务，分担服务器的压力。 尤其在写少读多的情况下，可以通过配置多个节点分担读负载，可以大大提高redis的读的并发量
+4. 高可用基石：主从复制是哨兵和集群能够实施的基础。
+
+### 环境配置
+
+只配置从库，不配置主库
+
+```bash
+info replication # 查看主从的配置
+
+```
+
+> 修改配置文件
+
+1. 端口
+2. logfile name
+3. pid名字
+4. dumo文件名字
+
+> 启动成功
+
+```bash
+[root@localhost src]# ps -ef|grep redis
+root       2858      1  0 07:39 ?        00:00:00 redis-server 127.0.0.1:6379
+root       2983   2923  0 07:40 pts/1    00:00:00 redis-cli -p 6379
+root       3070      1  0 07:40 ?        00:00:00 redis-server 127.0.0.1:6380
+root       3161   3127  0 07:40 pts/3    00:00:00 redis-cli -p 6380
+root       3256      1  0 07:41 ?        00:00:00 redis-server 127.0.0.1:6381
+root       3347   3313  0 07:41 pts/5    00:00:00 redis-cli -p 6381
+
+```
+
+
+
+### 一主二从
+
+一主（79） 二从（80， 81）
+
+```bash
+slaveof
+```
+
+
+
+#### slave
+
+```bash
+127.0.0.1:6380> SLAVEOF 127.0.0.1 6379
+OK
+127.0.0.1:6380> info replication
+# Replication
+role:slave # 角色转变成slaver
+# master的信息
+master_host:127.0.0.1
+master_port:6379
+master_link_status:up
+master_last_io_seconds_ago:5
+master_sync_in_progress:0
+slave_repl_offset:14
+slave_priority:100
+slave_read_only:1
+connected_slaves:0
+master_replid:47a9ea51f0b6b80b9493a4f38aa41ff4b95e1637
+master_replid2:0000000000000000000000000000000000000000
+master_repl_offset:14
+second_repl_offset:-1
+repl_backlog_active:1
+repl_backlog_size:1048576
+repl_backlog_first_byte_offset:1
+repl_backlog_histlen:14
+
+```
+
+#### master
+
+```bash
+127.0.0.1:6379> info replication
+# Replication
+role:master
+connected_slaves:1
+# 从机的信息
+slave0:ip=127.0.0.1,port=6380,state=online,offset=98,lag=1
+master_replid:47a9ea51f0b6b80b9493a4f38aa41ff4b95e1637
+master_replid2:0000000000000000000000000000000000000000
+master_repl_offset:98
+second_repl_offset:-1
+repl_backlog_active:1
+repl_backlog_size:1048576
+repl_backlog_first_byte_offset:1
+repl_backlog_histlen:98
+
+```
+
+> 配置文件中配置
+
+```bash
+# slaveof <masterip> <masterport>
+
+# If the master is password protected (using the "requirepass" configuration
+# directive below) it is possible to tell the slave to authenticate before
+# starting the replication synchronization process, otherwise the master will
+# refuse the slave request.
+#
+# masterauth <master-password>
+
+```
+
+
+
+### 细节内容
+
+从机**无法**进行写操作，所有的写操作都在主机中进行，会同步到从机当中主机
+
+主机断开连接， 从机还是依旧链接主机，若此时主机回复链接，之后的写操作，从机仍然能获得
+
+如果是使用命令行配置的主从， 如果重启，则自动变成主机，不在维护之前的主从关系
+
+若再次连接充当从机，则可以再次获得之前的内容
+
+> 复制原理
+
+salve启动成功之后连接到master会发送一个sync同步命令
+
+master接受命令。启动后台的存盘进程，同时收集所有接收到的用于修改的命令，在后台进程结束之后，==master将传送整个文件至slave，并完成一次同步==
+
+- 全量复制
+  - slave接收到数据库文件数据后，将其存盘并加载到内存
+- 增量复制
+  - master将继续将新的所有收集到的修改命令一次传给slave，完成同步
+
+> 层层链路
+
+第二个节点既当79的从节点，也当81的主节点
+
+此时的80仍然是从节点，80仍然不能写入
+
+若此时主机出现故障（断开连接）， 此使可以使用`slaveof no one` , 此时该节点变成主节点。 此时如果79重新启动， 80仍然是主节点
+
+## 哨兵模式
+
+原理： 哨兵通过发送命令，等待redis服务响应，从而监控运行的多个redis实例
+
+哨兵的作用：
+
+- 通过发送命令， 让Redis服务器返回运行状态，包括主服务器和从服务器
+- 当哨兵检测到主服务器master宕机之后，会自动将slave切换成master， 通过发布订阅模式通知其他从服务器，各个哨兵之间形成监控，形成多哨兵模式
+
+> 测试
+
+目前的状态： 一主二从
+
+1. 配置哨兵文件
+
+```bash
+# sentinel monitor 被监控的名称 host port 1
+sentinel monitor myredis 127.0.0.1 6379 1
+
+```
+
+文件名称为： `sentinel.conf`
+
+2. 启动哨兵
+
+   ```bash
+   [root@localhost src]# redis-sentinel myconf/sentinel.conf
+   4478:X 08 Dec 06:11:18.082 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+   4478:X 08 Dec 06:11:18.083 # Redis version=4.0.6, bits=64, commit=00000000, modified=0, pid=4478, just started
+   4478:X 08 Dec 06:11:18.083 # Configuration loaded
+   4478:X 08 Dec 06:11:18.084 * Increased maximum number of open files to 10032 (it was originally set to 1024).
+                   _._                                                  
+              _.-``__ ''-._                                             
+         _.-``    `.  `_.  ''-._           Redis 4.0.6 (00000000/0) 64 bit
+     .-`` .-```.  ```\/    _.,_ ''-._                                   
+    (    '      ,       .-`  | `,    )     Running in sentinel mode
+    |`-._`-...-` __...-.``-._|'` _.-'|     Port: 26379
+    |    `-._   `._    /     _.-'    |     PID: 4478
+     `-._    `-._  `-./  _.-'    _.-'                                   
+    |`-._`-._    `-.__.-'    _.-'_.-'|                                  
+    |    `-._`-._        _.-'_.-'    |           http://redis.io        
+     `-._    `-._`-.__.-'_.-'    _.-'                                   
+    |`-._`-._    `-.__.-'    _.-'_.-'|                                  
+    |    `-._`-._        _.-'_.-'    |                                  
+     `-._    `-._`-.__.-'_.-'    _.-'                                   
+         `-._    `-.__.-'    _.-'                                       
+             `-._        _.-'                                           
+                 `-.__.-'                                               
+   
+   4478:X 08 Dec 06:11:18.086 # WARNING: The TCP backlog setting of 511 cannot be enforced because /proc/sys/net/core/somaxconn is set to the lower value of 128.
+   4478:X 08 Dec 06:11:18.091 # Sentinel ID is 10d71176f5e9e02d9b74b6c4107337a443900c4e
+   4478:X 08 Dec 06:11:18.091 # +monitor master myredis 127.0.0.1 6379 quorum 1
+   4478:X 08 Dec 06:11:18.092 * +slave slave 127.0.0.1:6380 127.0.0.1 6380 @ myredis 127.0.0.1 6379
+   4478:X 08 Dec 06:11:18.093 * +slave slave 127.0.0.1:6381 127.0.0.1 6381 @ myredis 127.0.0.1 6379
+   
+   ```
+
+   
+
+3. 如果此时主节点宕机，此时会随机从从节点选取一个节点当主节点
+
+   ```bash
+   127.0.0.1:6381> info replication
+   # Replication
+   role:master
+   connected_slaves:1
+   slave0:ip=127.0.0.1,port=6380,state=online,offset=12009,lag=1
+   master_replid:d5bb2fcd3c7b16c815d1ce019d1b8b427c469ae7
+   master_replid2:0000000000000000000000000000000000000000
+   master_repl_offset:12009
+   second_repl_offset:-1
+   repl_backlog_active:1
+   repl_backlog_size:1048576
+   repl_backlog_first_byte_offset:11181
+   repl_backlog_histlen:829
+   
+   ```
+
+   
+
+此时哨兵日志
+
+```bash
+4478:X 08 Dec 06:13:49.240 # +sdown master myredis 127.0.0.1 6379
+4478:X 08 Dec 06:13:49.240 # +odown master myredis 127.0.0.1 6379 #quorum 1/1
+4478:X 08 Dec 06:13:49.240 # +new-epoch 1
+4478:X 08 Dec 06:13:49.240 # +try-failover master myredis 127.0.0.1 6379
+4478:X 08 Dec 06:13:49.245 # +vote-for-leader 10d71176f5e9e02d9b74b6c4107337a443900c4e 1
+4478:X 08 Dec 06:13:49.245 # +elected-leader master myredis 127.0.0.1 6379
+4478:X 08 Dec 06:13:49.245 # +failover-state-select-slave master myredis 127.0.0.1 6379
+#将其修改成主节点
+4478:X 08 Dec 06:13:49.317 # +selected-slave slave 127.0.0.1:6381 127.0.0.1 6381 @ myredis 127.0.0.1 6379
+4478:X 08 Dec 06:13:49.317 * +failover-state-send-slaveof-noone slave 127.0.0.1:6381 127.0.0.1 6381 @ myredis 127.0.0.1 6379
+4478:X 08 Dec 06:13:49.401 * +failover-state-wait-promotion slave 127.0.0.1:6381 127.0.0.1 6381 @ myredis 127.0.0.1 6379
+4478:X 08 Dec 06:13:49.502 # +promoted-slave slave 127.0.0.1:6381 127.0.0.1 6381 @ myredis 127.0.0.1 6379
+4478:X 08 Dec 06:13:49.502 # +failover-state-reconf-slaves master myredis 127.0.0.1 6379
+4478:X 08 Dec 06:13:49.602 * +slave-reconf-sent slave 127.0.0.1:6380 127.0.0.1 6380 @ myredis 127.0.0.1 6379
+4478:X 08 Dec 06:13:50.514 * +slave-reconf-inprog slave 127.0.0.1:6380 127.0.0.1 6380 @ myredis 127.0.0.1 6379
+4478:X 08 Dec 06:13:51.585 * +slave-reconf-done slave 127.0.0.1:6380 127.0.0.1 6380 @ myredis 127.0.0.1 6379
+4478:X 08 Dec 06:13:51.636 # +failover-end master myredis 127.0.0.1 6379
+4478:X 08 Dec 06:13:51.637 # +switch-master myredis 127.0.0.1 6379 127.0.0.1 6381
+4478:X 08 Dec 06:13:51.637 * +slave slave 127.0.0.1:6380 127.0.0.1 6380 @ myredis 127.0.0.1 6381
+4478:X 08 Dec 06:13:51.637 * +slave slave 127.0.0.1:6379 127.0.0.1 6379 @ myredis 127.0.0.1 6381
+4478:X 08 Dec 06:14:21.689 # +sdown slave 127.0.0.1:6379 127.0.0.1 6379 @ myredis 127.0.0.1 6381
+
+```
+
+若此时6379此时恢复， 则会被归并到81下充当从节点
+
+
+
+优点：
+
+- 哨兵集群，基于主从复制，所有的主从的优点均存在
+- 主从可以切换， 故障可以转移， 系统的可用性更好
+
+缺点
+
+- Redis不好在线扩容，集群容量一旦到达上限，再次扩容会变得很复杂
+- 哨兵模式的配置较为复杂
+
